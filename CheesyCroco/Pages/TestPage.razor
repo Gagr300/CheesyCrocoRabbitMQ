@@ -1,0 +1,387 @@
+﻿@page "/testpage/{testId}"
+@using CheesyCroco.Models.Collections
+@using CheesyCroco.Services
+@using CheesyCroco.Models
+@using CheesyCroco.RabbitMQ
+@using System.Text.Json;
+@using System.Text.Unicode;
+@using System.Text.Encodings.Web;
+@inject QuestionService questionService
+@inject ResultService resultService
+@inject AnswerService answerService
+@inject TestService testService
+
+<PageTitle>Tests</PageTitle>
+
+<h1>Cheesy Croco Tests</h1>
+
+
+
+@if (sum == -1){
+    @if (questions == null || answers == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <div class="questions">
+        <ul> 
+            @foreach (var question in questions)
+            {
+                    if (question.testId == @TestId!)
+                    {
+                    <li>
+                        <td>@question.text</td>  
+                        @foreach (var answer in answers)
+                        {
+                                if (answer.questionId == question.Id)
+                            {
+                                <div class="answer_option">
+                                    <button id="answer_option" class="btn btn-primary" @onclick="@(()=>attemptRates[question.questionIndex] = answer.score)">
+                                        @answer.text
+                                    </button>
+                                </div>
+                        
+                            }
+                        }
+                    </li>
+                }
+            }
+        </ul>
+        </div>
+        <div class="result">
+            <button class="btn btn-primary" @onclick="CalculateSum">
+                Узнать результат
+            </button>
+        </div>
+    
+    }
+}
+else {
+    <h2 style="padding-top: 40px;"> Ваш результат</h2>
+    <div class="result_row">
+        <div class="result_item">
+            @foreach (var res in results)
+            {
+                if (res.testId == @TestId! && res.scoreMax >= sum && res.scoreMin <= sum)
+                {
+                    saveNewPassesCount();
+                    saveNewResultUserCount(res.Id);
+
+                    <img src="@res.imagePath">
+                    <div class="result_heading">
+                        <h2> @res.name</h2>
+                    </div>
+                    <div class="result_text">
+                        <h3> @res.text </h3>
+                    </div>
+
+                    break;
+                }
+            }
+        </div>
+        <div class="result_plot">
+            <section>
+                  <h2>
+                        Посмотрите результаты других людей)
+                  </h2>
+                  <ul class="chart">
+                      @foreach (var result in results)
+                    {
+                        if (result.testId == @TestId!)
+                        {
+                            <li style="grid-column: span @result.userCount">
+                                @result.name
+                            <span>@result.userCount</span>
+                            </li>
+  
+                        }
+                    }
+                  </ul> 
+            </section>
+        </div>
+    </div>
+
+    @if (showRating){
+        <h3 style="padding-top: 40px;"> Оценитe наш тест </h3>
+
+        <SfRating @bind-Value="@currentValue" ShowLabel=true ReadOnly=false ItemsCount="10">
+
+            <LabelTemplate>
+                <span>@context out of 10</span>
+            </LabelTemplate>
+
+            <TooltipTemplate>
+                <span> @context stars</span>
+            </TooltipTemplate>
+
+            <EmptyTemplate>
+                <img src="/images/empty.png" width="30" height="30" />
+            </EmptyTemplate>
+
+            <FullTemplate>
+                <img src="/images/full.png" width="30" height="30" />
+            </FullTemplate>
+
+        </SfRating>
+
+        <div class="result">
+            <button class="btn btn-primary" @onclick="saveNewRate">
+                Оценить
+            </button>
+        </div>
+    }
+    else
+    {
+        <h3 style="padding-top: 40px;"> Ваша оценка: @currentValue </h3>
+    }
+
+
+}
+
+
+@code {
+    double currentValue = 0;
+
+    private bool showRating = true;
+
+    private List<Question> questions;
+    private List<Answer> answers;
+    private List<Result> results;
+    private List<Test> tests;
+    private Test curTest;
+    private int[] attemptRates;
+    private int sum;
+
+    [Parameter]
+    public string? TestId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        sum = -1;
+        tests = await GetTests();
+        questions = await GetQuestions();
+        answers = await GetAnswers();
+        results = await GetResults();
+
+        attemptRates = new int[questions.Count()];
+
+    }
+
+    protected Test getCurrentTestById(string TestId)
+    {
+        foreach (Test test in tests)
+        {
+            if (test.Id == TestId!)
+            {
+                return test;
+            }
+        };
+        return new Test
+            {
+                name = "Test name (click on me)",
+                rateNum = 0,
+                rateSum = 1,
+                questionsNum = 1,
+                passCounter = 0,
+                imagePath = ""
+            };
+    }
+
+    protected void CalculateSum()
+    {
+        foreach (int i in attemptRates) sum += i;
+    }
+
+    protected async void saveNewRate()
+    {
+        showRating = false;
+
+        var tmp = testService.GetById(TestId);
+        tmp.rateNum++;
+        tmp.rateSum += (int)currentValue;
+        testService.SaveOrUpdate(tmp);
+        //SaveOrUpdateTest(tmp);
+    }
+
+    protected void saveNewPassesCount()
+    {
+        var tmp = testService.GetById(TestId);
+        tmp.passCounter++;
+        testService.SaveOrUpdate(tmp);
+        //SaveOrUpdateTest(tmp);
+    }
+
+    protected void saveNewResultUserCount(string resId)
+    {
+        var tmp = resultService.GetById(resId);
+        tmp.userCount++;
+        resultService.SaveOrUpdate(tmp);
+        //SaveOrUpdateResult(tmp);
+    }
+    private async Task<List<Test>> GetTests()
+    {
+
+        Console.WriteLine("RPC Client");
+
+        string body = "";
+
+        Request<string> request = new Request<string>();
+
+        request.TypeOfRequest = "test.getAll";
+        request.Body = body;
+
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string testsString = response.Message;
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<List<Test>>(testsString);
+    }
+
+    private async Task<List<Answer>> GetAnswers()
+    {
+
+        Console.WriteLine("RPC Client");
+
+        string body = "";
+
+        Request<string> request = new Request<string>();
+
+        request.TypeOfRequest = "answer.getAll";
+        request.Body = body;
+
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string answersString = response.Message;
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<List<Answer>>(answersString);
+    }
+
+    private async void SaveOrUpdateTest(Test test)
+    {
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        Console.WriteLine("RPC Client");
+
+
+        Request<Test> request = new Request<Test>();
+
+        request.TypeOfRequest = "test.saveOrUpdate";
+        request.Body = test;
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string resultsString = response.Message;
+        return;
+    }
+
+    private async void SaveOrUpdateResult(Result result)
+    {
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        Console.WriteLine("RPC Client");
+
+
+        Request<Result> request = new Request<Result>();
+
+        request.TypeOfRequest = "test.saveOrUpdate";
+        request.Body = result;
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string resultsString = response.Message;
+        return;
+    }
+
+    private async Task<List<Result>> GetResults()
+    {
+
+        Console.WriteLine("RPC Client");
+
+        string body = "";
+
+        Request<string> request = new Request<string>();
+
+        request.TypeOfRequest = "result.getAll";
+        request.Body = body;
+
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string resultsString = response.Message;
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<List<Result>>(resultsString);
+    }
+
+    private async Task<List<Question>> GetQuestions()
+    {
+
+        Console.WriteLine("RPC Client");
+
+        string body = "";
+
+        Request<string> request = new Request<string>();
+
+        request.TypeOfRequest = "question.getAll";
+        request.Body = body;
+
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string questionsString = response.Message;
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<List<Question>>(questionsString);
+    }
+
+    private async Task<Response> InvokeAsync(string requestString)
+    {
+        var rpcClient = new RPCClient();
+        Console.WriteLine(" [x] Requesting ");
+
+        var responseString = await rpcClient.CallAsync(requestString);
+        var response = JsonSerializer.Deserialize<Response>(responseString);
+
+        Console.WriteLine(" [.] Got {0}, {1}", response.Status, response.Message);
+
+        rpcClient.Dispose();
+        return response;
+    }
+}

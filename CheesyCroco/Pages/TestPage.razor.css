@@ -1,0 +1,218 @@
+﻿*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.result_plot body {
+    font-family: 'Bitter', sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-size: 1.125rem;
+    color: #101820;
+    background-color: #f8f8f8;
+}
+
+.result_plotsection {
+    width: 100%;
+    max-width: 30rem;
+    padding: 1.5rem 1.5rem 2rem;
+    border: 2px solid #a7a8aa;
+    border-radius: 0.5rem;
+    margin: auto;
+}
+
+.result_ploth2 {
+    margin: 0 0 2.5rem;
+}
+
+.result_plot .chart {
+    display: grid;
+    grid-template-columns: auto;
+    gap: .5em 0;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+    grid-auto-columns: 1fr;
+}
+
+.result_plot li {
+    background: #ffd100;
+    border: 2px solid white;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.5rem
+}
+
+    .result_plot li span {
+        font-weight: bold;
+    }
+
+
+.checked {
+    color: orange;
+}
+
+.answer_option {
+    display: flex;
+    justify-content: space-between;
+}
+
+.answer_option button {
+    background-color: seagreen;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    font-size: 18px;
+    margin: 4px 2px;
+    cursor: pointer;
+    width: 300px;
+    border-radius: 12px;
+}
+
+    .answer_option button:hover{
+        background-color: #3aaa20;
+    }
+
+    .questions ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+.questions li {
+    background-color: #f0f0f0;
+    padding: 10px 20px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-size: 18px;
+}
+
+.result button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    display: inline-block;
+    font-size: 18px;
+    margin: 4px 2px;
+    cursor: pointer;
+    width: 200px;
+    border-radius: 12px;
+}
+
+.result_text h3 {
+    background: var(--bgblack);
+    margin-bottom: 10px;
+    position: relative;
+    border-radius: 10px;
+    transition: all .1s linear;
+    box-shadow: 0 0 0 1px var(--bgblack);
+    width: 1000px;
+    height: 100%;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-between;
+    background-size: cover;
+    background-position: center;
+    padding-left: 15px;
+    padding-right: 30px;
+    padding-bottom: 10px;
+}
+
+
+.result_heading h2 {
+    background: var(--bgblack);
+    margin-bottom: 10px;
+    margin-top: 10px;
+    position: relative;
+    transition: all .1s linear;
+    box-shadow: 0 0 0 1px var(--bgblack);
+    width: 1000px;
+    height: 100%;
+    font-size: 22px;
+    display: flex;
+    padding-left: 15px;
+}
+
+.result_item {
+    background: var(--bgblack);
+    margin-bottom: 20px;
+    position: relative;
+    border-radius: 10px;
+    transition: all .1s linear;
+    box-shadow: 0 0 0 1px var(--bgblack);
+    width: 1000px;
+    height: 100%;
+    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid;
+    padding-left: 15px;
+}
+
+.result_item img {
+    margin-top: 30px;
+    margin-left: 30px;
+    width: 400px;
+    height: 400px;
+    display: flex;
+}
+
+.result_row {
+    display: flex;
+    line-height: 1.5;
+    justify-content: normal;
+}
+
+.result_plot {
+    padding-left: 100px;
+    
+}
+
+
+/* Styles for the slider container */
+.rating-slider {
+    width: 300px;
+    margin: 50px auto;
+}
+
+    /* Styles for the slider track */
+    .rating-slider input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 5px;
+        background: #d3d3d3;
+        outline: none;
+        border-radius: 20px;
+        margin: 0;
+        padding: 0;
+    }
+
+        /* Styles for the slider thumb */
+        .rating-slider input[type="range"]::-webkit-slider-thumb {
+            --star: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 17.25l-6.188 3.75 1.641-7.031-5.438-4.734 7.172-0.609 2.813-6.609 2.813 6.609 7.172 0.609-5.438 4.734 1.641 7.031z"/></svg>');
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ffd700;
+            border-radius: 100%;
+            cursor: pointer;
+            mask: var(--star);
+            -webkit-mask: var(--star);
+        }
+
+
+
+    

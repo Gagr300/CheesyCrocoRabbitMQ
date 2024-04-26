@@ -1,0 +1,109 @@
+﻿@page "/tests"
+@using CheesyCroco.Models.Collections
+@using CheesyCroco.Services
+@using CheesyCroco.Models
+@using CheesyCroco.RabbitMQ
+@using System.Text.Json;
+@using System.Text.Encodings.Web;
+@using System.Text.Unicode;
+@inject TestService testService
+
+<PageTitle>Tests</PageTitle>
+
+<h1>Cheesy Croco Tests</h1>
+
+@if (tests == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+
+    @for (int i = 0; i <= tests.Count() / 4; i++)
+    {
+        <div class="tests_row">
+            @for (int j = 0; j < 4; j++)
+            {
+                @if (i * 4 + j >= tests.Count())
+                {
+                    break;
+                }
+                string tmp = "testpage/" + @tests[i + j].Id;
+                <div class="test_item" onclick="location.href='@tmp';">
+                    <img src="@tests[i * 4 + j].imagePath">
+                    <div class="test_item-title">
+                        <h3>
+                            @tests[i * 4 + j].name
+                        </h3>
+                    </div>
+                    <div class="test_item-bottom">
+                        <div class="test_item-questionsNum" title="Количество вопросов">@tests[i * 4 + j].questionsNum</div>
+                        <div class="test_item-rating" title="Оценка по 10-бальной шкале" placeholder="0.00">@GetTestRate(tests[i * 4 + j].rateSum, tests[i * 3 + j].rateNum)</div>
+                        <div class="test_item-passes" title="Количество прохождений">@tests[i * 4 + j].passCounter</div>
+                    </div>
+                    
+                    
+                </div>
+            }
+        </div>
+    }
+   
+}
+
+
+@code {
+    private List<Test> tests;
+
+    protected string GetTestRate(int a, int b)
+    {
+        double number = 1.0 * a / b;
+        string formattedNumber = number.ToString("0.00");
+        return formattedNumber;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //tests = testService.GetAll();
+        tests = await GetTests();
+    }
+
+    private async Task<List<Test>> GetTests()
+    {
+
+        Console.WriteLine("RPC Client");
+
+        string body = "";
+
+        Request<string> request = new Request<string>();
+
+        request.TypeOfRequest = "test.getAll";
+        request.Body = body;
+
+        var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+
+        var requestString = JsonSerializer.Serialize(request, options);
+
+        var response = await InvokeAsync(requestString);
+
+        string productsString = response.Message;
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<List<Test>>(productsString);
+    }
+
+    private async Task<Response> InvokeAsync(string requestString)
+    {
+        var rpcClient = new RPCClient();
+        Console.WriteLine(" [x] Requesting test.getAll");
+
+        var responseString = await rpcClient.CallAsync(requestString);
+        var response = JsonSerializer.Deserialize<Response>(responseString);
+
+        Console.WriteLine(" [.] Got {0}, {1}", response.Status, response.Message);
+
+        rpcClient.Dispose();
+        return response;
+    }
+}
